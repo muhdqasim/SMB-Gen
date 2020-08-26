@@ -64,7 +64,7 @@ model = xgb.XGBRegressor(
 )
 
 model.fit(train_x, train_y, eval_set=[(train_x, train_y), (valid_x, valid_y)], verbose=True, early_stopping_rounds=3)
-#model.save_model("/nfs/annie/sc19mq/dataFiles/xgModel_BEST.model")
+model.save_model("/nfs/annie/sc19mq/dataFiles/xgModel_1.model")
 
 #model.load_model('/nfs/annie/sc19mq/dataFiles/xgModel_BEST.model')
 
