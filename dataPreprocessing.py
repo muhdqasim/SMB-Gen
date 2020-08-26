@@ -100,7 +100,7 @@ clean_features.reset_index(inplace=True)
 clean_features.set_index('time', inplace=True)
 
 #Group by mean value
-grouped = clean_features.groupby(['time']).mean()
+
 
 print()
 print(grouped)
@@ -108,26 +108,31 @@ print()
 
 features = ["ps", "cl", "hus", "pr", "psl", "rsut", "ta"]
 
-for feature in features:
-  grouped[feature].plot(title='Mean value over the years', colormap='jet')
-  pyplot.show()
-  
-  grouped[feature].hist()
-  pyplot.show()
+def printHistandMeanPlots():
+    grouped = clean_features.groupby(['time']).mean()
+    for feature in features:
+        grouped[feature].plot(title='Mean value over the years', colormap='jet')
+        pyplot.show()
+
+        grouped[feature].hist()
+        pyplot.show()
 
 
 #DICKEY FULLER TEST FOR STATIONARITY, MORE ROBUST THAN CHECKING HISTOGRAM AND PLOTS
-for i in tqdm(range(len(features))):
-  print("------DICKEY FULLER TEST FOR ", features[i], " ------------------")
-  dftest = adfuller(clean_features[features[i]], autolag='AIC')
-  dfoutput = pd.Series(dftest[:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
-  for key, value in dftest[4].items():
-    dfoutput['Critical Value (%s)'%key] = value
-  del dftest
-  del dfoutput
-  
+def dickyFullerTest():
+    for i in tqdm(range(len(features))):
+        print("------DICKEY FULLER TEST FOR ", features[i], " ------------------")
+        dftest = adfuller(clean_features[features[i]], autolag='AIC')
+        dfoutput = pd.Series(dftest[:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
+        for key, value in dftest[4].items():
+            dfoutput['Critical Value (%s)'%key] = value
+        del dftest
+        del dfoutput
 
-#eature HUS is found to be non-stationary. It will be removed later along with highly collinear RLUT and TS
+        
+printHistandMeanPlots()
+#dickyFullerTest()
+#feature HUS is found to be non-stationary. It will be removed later along with highly collinear RLUT and TS
 
 #Uncomment line below to save progress till now
 #clean_features.to_pickle("/nfs/annie/sc19mq/dataFiles/featuresGlobal_UNCORR_OUTLIERS.pkl")
@@ -163,25 +168,26 @@ print()
 
 
 #Get cluster score using elbow  method
-K_clusters = range(1,10)
-kmeans = [KMeans(n_clusters=i) for i in K_clusters]
-Y_axis = np.array(clean_smb['LAT']).reshape(-1,1)
-X_axis = np.array(clean_smb['LON']).reshape(-1,1)
-score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
+def elbowMethodScore():
+    K_clusters = range(1,10)
+    kmeans = [KMeans(n_clusters=i) for i in K_clusters]
+    Y_axis = np.array(clean_smb['LAT']).reshape(-1,1)
+    X_axis = np.array(clean_smb['LON']).reshape(-1,1)
+    score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
 
-for i in range(len(kmeans)):
-  score = kmeans[i].fit(Y_axis).score(Y_axis)
-  print("CLUSTERS: ", i)
-  print("SCORE: ", score)
-  print()
+    for i in range(len(kmeans)):
+        score = kmeans[i].fit(Y_axis).score(Y_axis)
+        print("CLUSTERS: ", i)
+        print("SCORE: ", score)
+        print()
   
 
-
+#elbowMethodScore()
 
 #Cluster using 5 clusters
 kmeans = KMeans(n_clusters = 5, init ='k-means++')
-clean_smb['cluster_label'] = kmeans.fit_predict(clean_smb[clean_smb.columns[:2]])
-clean_features['cluster_label'] = kmeans.predict(clean_features[clean_features.columns[:2]])
+clean_smb['cluster_label'] = kmeans.fit_predict(clean_smb[clean_smb.columns[-1:]])
+clean_features['cluster_label'] = kmeans.predict(clean_features[clean_features.columns[-1:]])
 
 
 #Uncomment this line to save progress till now
@@ -198,9 +204,10 @@ clean_features = clean_features.groupby(['time','cluster_label'])["ps", "cl", "h
 
 clean_smb = clean_smb.groupby(['time','cluster_label'])['SMB'].mean()
 
-datasetMerged = clean_features.join(clean_smb, how='outer')
+datasetMerged = clean_features.join(clean_smb, how='inner')
 
 datasetMerged = datasetMerged.dropna()
+
 
 #Normalize dataset for faster machine learning training
 features_std = StandardScaler().fit_transform(datasetMerged)
