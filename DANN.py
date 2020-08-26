@@ -15,11 +15,11 @@ from matplotlib import pyplot as plt
 pathToTrainingData = '/nfs/annie/sc19mq/dataFiles/trainDataset.pkl'
 pathToValidationData = '/nfs/annie/sc19mq/dataFiles/validDataset.pkl'
 pathToTestData = '/nfs/annie/sc19mq/dataFiles/testDataset.pkl'
-pathToLargeTestData = '/nfs/annie/sc19mq/dataFiles/testDataset_2.pkl'
+#pathToLargeTestData = '/nfs/annie/sc19mq/dataFiles/testDataset_2.pkl'
 
 train = pd.read_pickle(pathToTrainingData)
 valid = pd.read_pickle(pathToValidationData)
-test = pd.read_pickle(pathToLargeTestData)
+test = pd.read_pickle(pathToTestData)
 
 #Drop multicollinear RLUT AND TS & non-stationary HUS
 featuresRemoved = ["hus", "ts","rlut"]
@@ -71,81 +71,61 @@ model.add(Dense(1))
 
 
 #Uncomment lines below to load a saved model for testing instead of training and comment out model.fit line below
-model.build((1,7))
-model.load_weights("/nfs/annie/sc19mq/dataFiles/dann_NEW_BEST.h5")
+#model.build((1,7))
+#model.load_weights("/nfs/annie/sc19mq/dataFiles/dann_1.h5")
 
-#opt = tf.keras.optimizers.Adam(learning_rate=0.001)
-#model.compile(optimizer=opt, loss= "mse", metrics=['mse'])
-
-#To create model checkpoints in between training
-#checkpoint = ModelCheckpoint("/nfs/annie/sc19mq/dataFiles/dann_newSet_ckpt.hdf5", monitor='val_loss', verbose=1,
-#                             save_best_only=True, mode='auto', period=1)
+opt = tf.keras.optimizers.Adam(learning_rate=0.001)
+model.compile(optimizer=opt, loss= "mse", metrics=['mse'])
 
 # fit network
-#history = model.fit(
-#  dataset_train_x,
-#  dataset_train_y, 
-#  epochs=15, 
-#  validation_data=(dataset_valid_x, dataset_valid_y), 
-#  verbose=2,
-#  callbacks=[checkpoint],
-#  shuffle=True,
-#  use_multiprocessing=True,
-#  workers=4
-#)
+history = model.fit(
+  dataset_train_x,
+  dataset_train_y, 
+  epochs=15, 
+  validation_data=(dataset_valid_x, dataset_valid_y), 
+  verbose=2,
+  shuffle=True,
+  use_multiprocessing=True,
+  workers=4
+)
    
-#model.save('/nfs/annie/sc19mq/dataFiles/dann_NEW_BEST.h5')
+model.save('/nfs/annie/sc19mq/dataFiles/dann_1.h5')
 
-actual_x = np.array([test_x[i] for i in range(0, len(test_x), 10000)]) 
-actual_y = np.array([test_y[i] for i in range(0, len(test_y), 10000)])
+y_pred = model.predict(dataset_test_x)
 
-print("ACTUAL X -> ", actual_x.shape) 
-print("ACTUAL Y -> ", actual_y.shape)
-
-y_pred = model.predict(actual_x)
-
-performanceMetric = r2_score(actual_y, y_pred)
+performanceMetric = r2_score(dataset_test_y, y_pred)
 print("Performance metric R2 score is: ")
 print(performanceMetric)
 
-mseLoss =  mean_squared_error(actual_y, y_pred)
+mseLoss =  mean_squared_error(dataset_test_y, y_pred)
 print("Performance metric MSE score is: ")
 print(mseLoss)
 
-maeLoss =  mean_absolute_error(actual_y, y_pred)
+maeLoss =  mean_absolute_error(dataset_test_y, y_pred)
 print("Performance metric MAE score is: ")
 print(maeLoss)
 
 
-#plot_model(model, to_file='/nfs/annie/sc19mq/imageFiles/DANN_model_plot_BEST.png', show_shapes=True, show_layer_names=True)
+plot_model(model, to_file='/nfs/annie/sc19mq/imageFiles/DANN_model_1.png', show_shapes=True, show_layer_names=True)
 
 
-hist_json_file = '/nfs/annie/sc19mq/dataFiles/DANN_history_BEST.pkl'
+hist_json_file = '/nfs/annie/sc19mq/dataFiles/DANN_history_1.pkl'
 
-#with open(hist_json_file, mode='wb') as f:
-#  pickle.dump(history.history, f)
+with open(hist_json_file, mode='wb') as f:
+  pickle.dump(history.history, f)
 
 #history = pd.read_pickle(hist_json_file)
   
 #print(history.history)
   
 # summarize history for loss
-#plt.plot(history.history['loss'])
-#plt.plot(history.history['val_loss'])
-#plt.title('model loss')
-#plt.ylabel('loss')
-#plt.xlabel('epoch')
-#plt.legend(['train', 'valid'], loc='upper right')
-#plt.show()
-
-
-#plt.scatter(test_y, test_y, c='tab:blue', alpha=0.3, label="Actual")
-#plt.scatter(y_pred, y_pred, c='tab:red', alpha=0.3, label="Observed")
-#plt.title('model loss')
-#plt.ylabel('SMB value')
-#plt.xlabel('SMB value')
-#plt.legend(loc='upper left')
-#plt.show()
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'valid'], loc='upper right')
+plt.show()
  
 
 fig, ax = plt.subplots()
